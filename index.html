@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RenewAI Energy Platform - Digital Twin Simulation</title>
+    <meta name="description" content="Advanced renewable energy digital twin platform with real-time simulation of solar, wind, and hydro power generation. Monitor energy production, battery storage, and grid optimization." />
+    <meta name="keywords" content="renewable energy, digital twin, solar power, wind energy, hydroelectric, battery storage, grid optimization, energy simulation" />
+    
+    <!-- Chart.js for beautiful charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e1e5e9;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Energy-themed color variables */
+        :root {
+            --solar-color: #f59e0b;
+            --solar-glow: #fbbf24;
+            --wind-color: #3b82f6;
+            --wind-glow: #60a5fa;
+            --hydro-color: #06b6d4;
+            --hydro-glow: #22d3ee;
+            --primary-color: #10b981;
+            --primary-glow: #34d399;
+            --card-bg: rgba(26, 32, 46, 0.8);
+            --card-border: rgba(52, 211, 153, 0.2);
+            --text-primary: #e1e5e9;
+            --text-secondary: #9ca3af;
+        }
+
+        /* Animations */
+        @keyframes windmill-rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes solar-pulse {
+            0%, 100% { 
+                filter: drop-shadow(0 0 10px var(--solar-glow));
+                transform: scale(1);
+            }
+            50% { 
+                filter: drop-shadow(0 0 20px var(--solar-glow));
+                transform: scale(1.05);
+            }
+        }
+
+        @keyframes hydro-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes energy-flow {
+            0% { transform: translateX(-100px); opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { transform: translateX(100px); opacity: 0; }
+        }
+
+        @keyframes glow-pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(52, 211, 153, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(52, 211, 153, 0.6); }
+        }
+
+        /* Background particles */
+        .background-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(52, 211, 153, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(245, 158, 11, 0.1) 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 2rem 0;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            animation: glow-pulse 3s ease-in-out infinite;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-glow));
+            color: white;
+            box-shadow: 0 4px 20px rgba(52, 211, 153, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(52, 211, 153, 0.5);
+        }
+
+        .btn-secondary {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(52, 211, 153, 0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Grid layouts */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        .grid {
+            display: grid;
+            gap: 2rem;
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+        }
+
+        .grid-4 {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 1rem;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border-color: var(--primary-glow);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(52, 211, 153, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .card:hover::before {
+            left: 100%;
+        }
+
+        .card h3 {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        /* Energy source cards */
+        .energy-source {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 0.5rem;
+            border-left: 4px solid;
+        }
+
+        .energy-source.solar {
+            border-left-color: var(--solar-color);
+        }
+
+        .energy-source.wind {
+            border-left-color: var(--wind-color);
+        }
+
+        .energy-source.hydro {
+            border-left-color: var(--hydro-color);
+        }
+
+        /* Animated icons */
+        .energy-icon {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .windmill {
+            position: relative;
+        }
+
+        .windmill-base {
+            width: 4px;
+            height: 40px;
+            background: var(--wind-color);
+            border-radius: 2px;
+        }
+
+        .windmill-blades {
+            position: absolute;
+            top: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 30px;
+            animation: windmill-rotate 2s linear infinite;
+        }
+
+        .blade {
+            position: absolute;
+            width: 15px;
+            height: 2px;
+            background: var(--wind-glow);
+            border-radius: 1px;
+            transform-origin: center;
+        }
+
+        .blade:nth-child(1) { transform: rotate(0deg); }
+        .blade:nth-child(2) { transform: rotate(120deg); }
+        .blade:nth-child(3) { transform: rotate(240deg); }
+
+        .solar-panel {
+            width: 40px;
+            height: 25px;
+            background: linear-gradient(135deg, var(--solar-color), var(--solar-glow));
+            border-radius: 4px;
+            position: relative;
+            animation: solar-pulse 3s ease-in-out infinite;
+        }
+
+        .solar-panel::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 3px,
+                rgba(255, 255, 255, 0.1) 3px,
+                rgba(255, 255, 255, 0.1) 6px
+            );
+            border-radius: 2px;
+        }
+
+        .hydro-turbine {
+            position: relative;
+        }
+
+        .hydro-base {
+            width: 6px;
+            height: 30px;
+            background: var(--hydro-color);
+            border-radius: 3px;
+        }
+
+        .hydro-blades {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 25px;
+            height: 25px;
+            animation: hydro-spin 1.5s linear infinite;
+        }
+
+        .hydro-blade {
+            position: absolute;
+            width: 12px;
+            height: 2px;
+            background: var(--hydro-glow);
+            border-radius: 1px;
+            transform-origin: center;
+        }
+
+        .hydro-blade:nth-child(1) { transform: rotate(0deg); }
+        .hydro-blade:nth-child(2) { transform: rotate(60deg); }
+        .hydro-blade:nth-child(3) { transform: rotate(120deg); }
+        .hydro-blade:nth-child(4) { transform: rotate(180deg); }
+        .hydro-blade:nth-child(5) { transform: rotate(240deg); }
+        .hydro-blade:nth-child(6) { transform: rotate(300deg); }
+
+        /* Energy data */
+        .energy-data {
+            flex: 1;
+        }
+
+        .energy-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .energy-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Progress bars */
+        .progress-bar {
+            width: 100px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: energy-flow 2s ease-in-out infinite;
+        }
+
+        .progress-solar .progress-fill {
+            background: linear-gradient(90deg, var(--solar-color), var(--solar-glow));
+        }
+
+        .progress-wind .progress-fill {
+            background: linear-gradient(90deg, var(--wind-color), var(--wind-glow));
+        }
+
+        .progress-hydro .progress-fill {
+            background: linear-gradient(90deg, var(--hydro-color), var(--hydro-glow));
+        }
+
+        /* Chart containers */
+        .chart-container {
+            height: 300px;
+            position: relative;
+            padding: 1rem 0;
+        }
+
+        /* Status indicators */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .status-item {
+            text-align: center;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 0.5rem;
+            border: 1px solid rgba(52, 211, 153, 0.2);
+        }
+
+        .status-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0.5rem 0;
+        }
+
+        .status-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Loading state */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(52, 211, 153, 0.3);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Battery indicator */
+        .battery-indicator {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            border: 2px solid var(--primary-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .battery-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-glow));
+            border-radius: 8px;
+            transition: width 0.5s ease;
+            position: relative;
+        }
+
+        .battery-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            animation: energy-flow 3s ease-in-out infinite;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .container {
+                padding: 0 1rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .grid-3, .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-pattern"></div>
+    
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🔋 RenewAI Energy Platform</h1>
+            <p>Digital Twin Simulation • Real-time Renewable Energy Monitoring</p>
+            <div id="status-info" class="status-info">Sim Time: <span id="sim-time">0</span> • Horizon: <span id="horizon-index">0</span></div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button id="start-btn" class="btn btn-primary">
+                📊 Start Plotting
+            </button>
+            <button id="step-btn" class="btn btn-secondary">
+                ⚡ Step
+            </button>
+            <button id="reset-btn" class="btn btn-secondary">
+                🔄 Reset
+            </button>
+        </div>
+
+        <!-- Loading state -->
+        <div id="loading" class="loading">
+            <div class="loading-spinner"></div>
+            <p>Initializing RenewAI Platform...</p>
+        </div>
+
+        <!-- Main dashboard -->
+        <div id="dashboard" style="display: none;">
+            <!-- Energy Nodes -->
+            <div class="grid grid-3" id="nodes-grid">
+                <!-- Nodes will be populated by JavaScript -->
+            </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-2" style="margin-top: 2rem;">
+                <!-- Power Generation Chart -->
+                <div class="card">
+                    <h3>⚡ Power Generation Timeline</h3>
+                    <div class="chart-container">
+                        <canvas id="generation-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Demand vs Supply Chart -->
+                <div class="card">
+                    <h3>📊 Demand vs Supply</h3>
+                    <div class="chart-container">
+                        <canvas id="demand-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Status -->
+            <div class="card" style="margin-top: 2rem;">
+                <h3>🌐 System Status</h3>
+                <div class="status-grid" id="status-grid">
+                    <!-- Status items will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let isRunning = false;
+        let intervalId = null;
+        let state = null;
+        let stepHistory = [];
+        let generationChart = null;
+        let demandChart = null;
+
+        // Chart colors matching our theme
+        const COLORS = {
+            solar: '#f59e0b',
+            solarGlow: '#fbbf24',
+            wind: '#3b82f6',
+            windGlow: '#60a5fa',
+            hydro: '#06b6d4',
+            hydroGlow: '#22d3ee',
+            demand: '#ef4444',
+            primary: '#10b981',
+            primaryGlow: '#34d399'
+        };
+
+        // Initialize the application
+        async function init() {
+            console.log('🚀 Initializing RenewAI Platform...');
+            
+            // Setup event listeners
+            document.getElementById('start-btn').addEventListener('click', toggleSimulation);
+            document.getElementById('step-btn').addEventListener('click', () => stepSimulation(1));
+            document.getElementById('reset-btn').addEventListener('click', resetSimulation);
+
+            // Load initial state
+            await fetchState();
+            
+            // Hide loading and show dashboard
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+            
+            // Initialize charts
+            initCharts();
+        }
+
+        // Fetch current simulation state
+        async function fetchState() {
+            try {
+                const response = await fetch('/state');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                state = await response.json();
+                updateUI();
+                console.log('📊 State updated:', state);
+            } catch (error) {
+                console.error('❌ Error fetching state:', error);
+                // Show error message to user
+                showError('Failed to connect to RenewAI backend. Please ensure the Python server is running.');
+            }
+        }
+
+        // Step the simulation
+        async function stepSimulation(steps = 1) {
+            try {
+                const response = await fetch('/step_sim', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        steps, 
+                        apply_mppt: true, 
+                        do_demand_response: true,
+                        dr_reduce_fraction: 0.25 
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.results && data.results.length > 0) {
+                    stepHistory.push(...data.results);
+                    // Keep only last 50 steps for performance
+                    if (stepHistory.length > 50) {
+                        stepHistory = stepHistory.slice(-50);
+                    }
+                    updateCharts();
+                }
+                
+                await fetchState();
+                console.log(`⚡ Stepped ${steps} time(s)`);
+            } catch (error) {
+                console.error('❌ Error stepping simulation:', error);
+                showError('Failed to step simulation');
+            }
+        }
+
+        // Toggle simulation running state
+        function toggleSimulation() {
+            const btn = document.getElementById('start-btn');
+            
+            if (isRunning) {
+                clearInterval(intervalId);
+                isRunning = false;
+                btn.innerHTML = '📊 Start Plotting';
+                btn.classList.remove('btn-danger');
+                btn.classList.add('btn-primary');
+                console.log('⏸️ Plotting paused');
+            } else {
+                intervalId = setInterval(() => stepSimulation(1), 2000);
+                isRunning = true;
+                btn.innerHTML = '⏸️ Pause Plotting';
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-danger');
+                console.log('📊 Plotting started');
+            }
+        }
+
+        // Reset simulation
+        async function resetSimulation() {
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+            isRunning = false;
+            stepHistory = [];
+            
+            const btn = document.getElementById('start-btn');
+            btn.innerHTML = '📊 Start Plotting';
+            btn.classList.remove('btn-danger');
+            btn.classList.add('btn-primary');
+            
+            await fetchState();
+            updateCharts();
+            console.log('🔄 Plotting reset');
+        }
+
+        // Update the UI with current state
+        function updateUI() {
+            if (!state) return;
+
+            // Update status info
+            document.getElementById('sim-time').textContent = state.sim_time;
+            document.getElementById('horizon-index').textContent = state.horizon_index;
+
+            // Update nodes grid
+            updateNodesGrid();
+            updateSystemStatus();
+        }
+
+        // Update nodes grid
+        function updateNodesGrid() {
+            const grid = document.getElementById('nodes-grid');
+            grid.innerHTML = '';
+
+            Object.entries(state.nodes).forEach(([nodeName, nodeData]) => {
+                const currentIndex = state.horizon_index;
+                const currentStep = stepHistory.length > 0 ? stepHistory[stepHistory.length - 1] : null;
+                const currentNodeData = currentStep ? currentStep.nodes[nodeName] : null;
+
+                const solarPower = currentNodeData?.solar ?? nodeData.solar[currentIndex] ?? 0;
+                const windPower = currentNodeData?.wind ?? nodeData.wind[currentIndex] ?? 0;
+                const hydroPower = currentNodeData?.hydro ?? nodeData.hydro[currentIndex] ?? 0;
+                const demand = currentNodeData?.demand ?? nodeData.demand[currentIndex] ?? 0;
+                const batterySoC = currentNodeData?.battery_soc ?? nodeData.battery_soc ?? 0;
+
+                const nodeCard = createNodeCard(nodeName, {
+                    solar: solarPower,
+                    wind: windPower,
+                    hydro: hydroPower,
+                    demand: demand,
+                    battery: batterySoC
+                });
+
+                grid.appendChild(nodeCard);
+            });
+        }
+
+        // Create a node card element
+        function createNodeCard(nodeName, data) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            const batteryPercentage = (data.battery / 1000) * 100;
+            
+            card.innerHTML = `
+                <h3>🔌 Node ${nodeName}</h3>
+                <div style="margin-bottom: 1.5rem;">
+                    <div class="energy-label">Battery Storage</div>
+                    <div class="battery-indicator">
+                        <div class="battery-fill" style="width: ${Math.min(100, batteryPercentage)}%"></div>
+                    </div>
+                    <div style="text-align: center; margin-top: 0.5rem; color: var(--text-secondary);">
+                        ${data.battery.toFixed(1)} kWh (${batteryPercentage.toFixed(1)}%)
+                    </div>
+                </div>
+                
+                <div class="energy-source solar">
+                    <div class="energy-icon">
+                        <div class="solar-panel" style="animation-duration: ${3 - (data.solar / 800)}s"></div>
+                    </div>
+                    <div class="energy-data">
+                        <div class="energy-label">Solar Power</div>
+                        <div class="energy-value">${data.solar.toFixed(1)} kW</div>
+                    </div>
+                    <div class="progress-bar progress-solar">
+                        <div class="progress-fill" style="width: ${Math.min(100, (data.solar / 800) * 100)}%"></div>
+                    </div>
+                </div>
+                
+                <div class="energy-source wind">
+                    <div class="energy-icon">
+                        <div class="windmill">
+                            <div class="windmill-base"></div>
+                            <div class="windmill-blades" style="animation-duration: ${Math.max(0.5, 3 - (data.wind / 200))}s">
+                                <div class="blade"></div>
+                                <div class="blade"></div>
+                                <div class="blade"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="energy-data">
+                        <div class="energy-label">Wind Power</div>
+                        <div class="energy-value">${data.wind.toFixed(1)} kW</div>
+                    </div>
+                    <div class="progress-bar progress-wind">
+                        <div class="progress-fill" style="width: ${Math.min(100, (data.wind / 400) * 100)}%"></div>
+                    </div>
+                </div>
+                
+                <div class="energy-source hydro">
+                    <div class="energy-icon">
+                        <div class="hydro-turbine">
+                            <div class="hydro-base"></div>
+                            <div class="hydro-blades" style="animation-duration: ${Math.max(0.5, 2 - (data.hydro / 100))}s">
+                                <div class="hydro-blade"></div>
+                                <div class="hydro-blade"></div>
+                                <div class="hydro-blade"></div>
+                                <div class="hydro-blade"></div>
+                                <div class="hydro-blade"></div>
+                                <div class="hydro-blade"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="energy-data">
+                        <div class="energy-label">Hydro Power</div>
+                        <div class="energy-value">${data.hydro.toFixed(1)} kW</div>
+                    </div>
+                    <div class="progress-bar progress-hydro">
+                        <div class="progress-fill" style="width: ${Math.min(100, (data.hydro / 100) * 100)}%"></div>
+                    </div>
+                </div>
+                
+                <div style="border-top: 1px solid rgba(52, 211, 153, 0.2); padding-top: 1rem; margin-top: 1rem;">
+                    <div class="energy-data">
+                        <div class="energy-label">Current Demand</div>
+                        <div class="energy-value" style="color: #ef4444;">${data.demand.toFixed(1)} kW</div>
+                    </div>
+                    <div class="progress-bar" style="margin-top: 0.5rem;">
+                        <div class="progress-fill" style="background: linear-gradient(90deg, #ef4444, #f87171); width: ${Math.min(100, (data.demand / 600) * 100)}%"></div>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        // Update system status
+        function updateSystemStatus() {
+            const grid = document.getElementById('status-grid');
+            grid.innerHTML = '';
+
+            if (stepHistory.length === 0) return;
+
+            const currentStep = stepHistory[stepHistory.length - 1];
+            const nodes = Object.values(currentStep.nodes);
+
+            const totalGeneration = nodes.reduce((sum, node) => 
+                sum + (node.solar + node.wind + node.hydro), 0);
+            const totalDemand = nodes.reduce((sum, node) => sum + node.demand, 0);
+            const gridBalance = totalGeneration - totalDemand;
+            const avgBatterySoC = nodes.reduce((sum, node) => sum + (node.battery_soc || 0), 0) / nodes.length;
+
+            const statusItems = [
+                { label: 'Total Generation', value: `${totalGeneration.toFixed(1)} kW`, icon: '⚡' },
+                { label: 'Total Demand', value: `${totalDemand.toFixed(1)} kW`, icon: '📊' },
+                { label: 'Grid Balance', value: `${gridBalance.toFixed(1)} kW`, icon: '⚖️' },
+                { label: 'Avg Battery SoC', value: `${avgBatterySoC.toFixed(1)}%`, icon: '🔋' }
+            ];
+
+            statusItems.forEach(item => {
+                const statusItem = document.createElement('div');
+                statusItem.className = 'status-item';
+                statusItem.innerHTML = `
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">${item.icon}</div>
+                    <div class="status-value">${item.value}</div>
+                    <div class="status-label">${item.label}</div>
+                `;
+                grid.appendChild(statusItem);
+            });
+        }
+
+        // Initialize charts
+        function initCharts() {
+            const generationCtx = document.getElementById('generation-chart').getContext('2d');
+            const demandCtx = document.getElementById('demand-chart').getContext('2d');
+
+            // Generation chart
+            generationChart = new Chart(generationCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Solar',
+                            data: [],
+                            borderColor: COLORS.solar,
+                            backgroundColor: COLORS.solar + '20',
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Wind',
+                            data: [],
+                            borderColor: COLORS.wind,
+                            backgroundColor: COLORS.wind + '20',
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Hydro',
+                            data: [],
+                            borderColor: COLORS.hydro,
+                            backgroundColor: COLORS.hydro + '20',
+                            fill: true,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#e1e5e9'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: 'rgba(156, 163, 175, 0.2)' }
+                        },
+                        y: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: 'rgba(156, 163, 175, 0.2)' }
+                        }
+                    }
+                }
+            });
+
+            // Demand chart
+            demandChart = new Chart(demandCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Total Generation',
+                            data: [],
+                            borderColor: COLORS.primary,
+                            backgroundColor: COLORS.primary + '20',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Total Demand',
+                            data: [],
+                            borderColor: COLORS.demand,
+                            backgroundColor: COLORS.demand + '20',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#e1e5e9'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: 'rgba(156, 163, 175, 0.2)' }
+                        },
+                        y: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: 'rgba(156, 163, 175, 0.2)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update charts with new data
+        function updateCharts() {
+            if (!generationChart || !demandChart || stepHistory.length === 0) return;
+
+            const labels = stepHistory.map((_, index) => `T${index}`);
+            
+            // Aggregate data across all nodes for each timestep
+            const aggregatedData = stepHistory.map(step => {
+                const nodes = Object.values(step.nodes);
+                return {
+                    solar: nodes.reduce((sum, node) => sum + (node.solar || 0), 0),
+                    wind: nodes.reduce((sum, node) => sum + (node.wind || 0), 0),
+                    hydro: nodes.reduce((sum, node) => sum + (node.hydro || 0), 0),
+                    demand: nodes.reduce((sum, node) => sum + (node.demand || 0), 0)
+                };
+            });
+
+            // Update generation chart
+            generationChart.data.labels = labels;
+            generationChart.data.datasets[0].data = aggregatedData.map(d => d.solar);
+            generationChart.data.datasets[1].data = aggregatedData.map(d => d.wind);
+            generationChart.data.datasets[2].data = aggregatedData.map(d => d.hydro);
+            generationChart.update('none');
+
+            // Update demand chart
+            demandChart.data.labels = labels;
+            demandChart.data.datasets[0].data = aggregatedData.map(d => d.solar + d.wind + d.hydro);
+            demandChart.data.datasets[1].data = aggregatedData.map(d => d.demand);
+            demandChart.update('none');
+        }
+
+        // Show error message
+        function showError(message) {
+            const loading = document.getElementById('loading');
+            loading.innerHTML = `
+                <div style="color: #ef4444; text-align: center;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+                    <h2>Connection Error</h2>
+                    <p>${message}</p>
+                    <button onclick="location.reload()" class="btn btn-primary" style="margin-top: 1rem;">
+                        🔄 Retry
+                    </button>
+                </div>
+            `;
+        }
+
+        // Initialize the application when DOM is ready
+        document.addEventListener('DOMContentLoaded', init);
+
+        // Add some console styling for fun
+        console.log(`
+        %c🔋 RenewAI Energy Platform Initialized! %c
+
+        🌟 Features:
+        • Real-time renewable energy simulation
+        • Animated windmills, solar panels, and hydro turbines  
+        • Interactive energy flow visualization
+        • Advanced battery management
+        • Grid optimization algorithms
+
+        🚀 Ready for clean energy simulation!
+        `, 'color: #10b981; font-size: 16px; font-weight: bold;', 'color: #9ca3af;');
+    </script>
+</body>
+</html>
